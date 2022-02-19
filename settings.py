@@ -46,8 +46,11 @@ def parse_delta(masks, dir_):
         masks = masks[::-1]
 
     deltas = []
+    i = masks.shape[0]
+    """ print('===debug masks.shape', masks.shape)
+    print('===debug np.zeros(9) * 12', np.zeros(9) * 12) """
 
-    for h in range(11):
+    for h in range(i):
         if h == 0:
             # deltas.append(np.zeros(6)*12)
             deltas.append(np.zeros(9) * 12)

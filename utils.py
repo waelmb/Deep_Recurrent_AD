@@ -7,9 +7,10 @@ from torch.autograd import Variable
 from sympy import Symbol, solve
 import pandas as pd
 
-sequence_length = 11
+#sequence_length = 11
 
 def normalize_feature(train_data):
+    sequence_length = train_data.shape[1]
     tmp = []
     train_feature = train_data[:, :, 8:14]
     ICV_bl = train_data[:, :, 14]
@@ -21,9 +22,11 @@ def normalize_feature(train_data):
         norm_data = np.true_divide(data, ICV_bl)
         tmp.append(norm_data)
         t_tmp = np.array(tmp).transpose(1, 2, 0)
+    """ print('===debug normalize t_tmp', t_tmp.astype(float)) """
     return t_tmp.astype(float), mask.reshape(-1,sequence_length ,6).astype(float)
 
 def masking_cogntive_score(data):
+    sequence_length = data.shape[1]
     tmp = []
     max_range = [30,70,85]
     cog_feature = data.copy()
@@ -85,6 +88,13 @@ def scaling_feature_e(train_feature, estim_m_out=None, estim_c_out=None, train=F
             c = Symbol('c')
             equation1 = m * tmp_vol_max + c - 1
             equation2 = m * tmp_vol_min + c + 1
+            """ print('===debug tmp.shape', tmp.shape)
+            print('===debug tmp[:, idx]', tmp[:, idx])
+            print('===debug tmp[:, idx].shape', tmp[:, idx].shape)
+            print('===debug tmp_vol_max', tmp_vol_max)
+            print('===debug tmp_vol_min', tmp_vol_min)
+            print('===debug solve output', solve((equation1, equation2), dict=True))
+            print('===debug m output', m) """
             estim_m = solve((equation1, equation2), dict=True)[0][m]
             estim_c = solve((equation1, equation2), dict=True)[0][c]
         else:
