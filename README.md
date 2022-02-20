@@ -43,7 +43,7 @@ If you find this work useful for your research, please cite our [paper](https://
 ## Acknowledgements
 This work was supported by Institute for Information communications Technology Planning & Evaluation (IITP) grant funded by the Korea government (MSIT) (No.2019-0-00079, Artificial Intelligence Graduate School Program (Korea University)) and the National Research Foundation of Korea (NRF) grant funded by the Korea government (MSIT) (No. 2019R1A2C1006543).
 
-### Installing the requirements
+## Installing the Requirements
 1. Make sure that you have Python 3.9 by running the following in the command line: `python --version`
 2. Clone/download the repository to your local machine
 3. Using the command line, go to the main directory: `cd YOURPATH\Deep_Recurrent_AD`
@@ -53,7 +53,7 @@ This work was supported by Institute for Information communications Technology P
 
 Note: these instructions are on windows 10 machines. It should be similar on other systems as well.
 
-### Running the code
+## Running the Code
 1. Using the command line, go to the main directory: `cd YOURPATH\Deep_Recurrent_AD`
 2. Activate the virtual environment: `./venv\Scripts\activate`
-3. To run the model: `python main.py --data_path='ADNI_DATA_JUNG_FORMAT_5.pkl`
+3. To run the model: `python main.py --data_path='ADNI_DATA_JUNG_FORMAT_5.pkl'`
