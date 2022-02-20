@@ -12,3 +12,6 @@ venv/
 
 # text logging files
 *.txt
+
+# pt files
+*.pt

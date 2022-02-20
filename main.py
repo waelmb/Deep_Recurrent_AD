@@ -5,7 +5,7 @@ import torch.nn as nn
 import os
 gpu_id = "4"
 os.environ["CUDA_VISIBLE_DEVICES"] = gpu_id
-import model
+from model import Cog_Model
 from settings import *
 import random
 import datetime
@@ -241,7 +241,7 @@ for k in range(args.kfold-1,-1,-1):
     criterion_cls = FocalLoss(gamma=args.gamma, ignore_index=-2)
 
     if args.cognitive_score == True:
-        model = model.Cog_Model(args.hid_size, args.impute_weight, args.reg_weight, args.label_weight, args.task).to(device)
+        model = Cog_Model(args.hid_size, args.impute_weight, args.reg_weight, args.label_weight, args.task).to(device)
     # else:
     #     model = model.Model(args.hid_size, args.impute_weight, args.reg_weight,
     #                                                        args.label_weight, args.task).to(device)

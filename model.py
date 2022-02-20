@@ -110,11 +110,11 @@ class Cog_Model(nn.Module):
         labels = data['labels'][:, :10].contiguous().view(-1, 1)
         labels_indicator = torch.ones_like(labels)
         labels_indicator[torch.where(labels == -2)[0]] = 0
-        print('===debug data.shape', data[direct]['values'].shape)
+        """ print('===debug data.shape', data[direct]['values'].shape)
         print('===debug values.shape', values.shape)
         print('===debug masks.shape', masks.shape)
         print('===debug deltas.shape', deltas.shape)
-        print('===debug labels.shape', data['labels'].shape)
+        print('===debug labels.shape', data['labels'].shape) """
 
         h = Variable(torch.zeros((values.size()[0], self.rnn_hid_size)))
         c = Variable(torch.zeros((values.size()[0], self.rnn_hid_size)))
@@ -203,10 +203,11 @@ class Cog_Model(nn.Module):
                                     (data[direct]['values'][:, 1:, 7:8] * data[direct]['masks'][:, 1:, 7:8]))
         y_ad13_loss = criterion_reg(output_ad13.contiguous()* data[direct]['masks'][:, 1:, 8:9],
                                     (data[direct]['values'][:, 1:, 8:9] * data[direct]['masks'][:, 1:, 8:9]))
-        print('===debug output_probs', len(output_probs.contiguous().view(-1,3)))
+        """ print('===debug output_probs', len(output_probs.contiguous().view(-1,3)))
         print('===debug output_probs.shape', output_probs.contiguous().view(-1,3).shape)
-        print('===debug output_probs', len(labels.squeeze().long()))
-        raise NotImplementedError
+        print('===debug labels.squeeze()', len(labels.squeeze().long()))
+        print('===debug labels.shape', labels.shape) """
+        #raise NotImplementedError
 
         if multi_flag == True:
             y_cls_loss = criterion_cls(output_probs.contiguous().view(-1,3), labels.squeeze().long())
