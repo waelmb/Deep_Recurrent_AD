@@ -22,7 +22,9 @@ def normalize_feature(train_data):
         norm_data = np.true_divide(data, ICV_bl)
         tmp.append(norm_data)
         t_tmp = np.array(tmp).transpose(1, 2, 0)
-    """ print('===debug normalize t_tmp', t_tmp.astype(float)) """
+    """ print('===debug normalize t_tmp', t_tmp.astype(float)) 
+    print('missing bl: ', np.count_nonzero(~np.isnan(train_feature[:,0,:])))
+    print(train_feature.shape) """
     return t_tmp.astype(float), mask.reshape(-1,sequence_length ,6).astype(float)
 
 def masking_cogntive_score(data):

@@ -1,3 +1,4 @@
+import enum
 import pickle
 import torch
 import torch.optim as optim
@@ -86,6 +87,8 @@ kfold_cog2 = []
 kfold_cog3 = []
 kfold_mae = []
 kfold_mre = []
+kfold_imputation = []
+kfold_model = None
 
 # For logging purpose, create several directories
 dir = './{}_{}/{}/{}/{}/{}/{}/'.format(args.learning_rate, args.weight_decay, args.hid_size, args.label_weight, args.impute_weight, args.reg_weight,
@@ -235,7 +238,11 @@ for k in range(args.kfold-1,-1,-1):
         dataloaders = {'train': train_loader,
                        'valid': valid_loader,
                        'test': test_loader}
-
+    """ for key in dataloaders:
+        for i, data in enumerate(dataloaders[key]):
+            data = to_var(data)
+            print(data.shape)
+    raise NotImplementedError """
     # Define Model & Optimizer
     criterion_reg = nn.MSELoss()
     criterion_cls = FocalLoss(gamma=args.gamma, ignore_index=-2)
@@ -270,6 +277,7 @@ for k in range(args.kfold-1,-1,-1):
     best_feature6 = 0
     best_mae = 0
     best_mre = 0
+    best_imputation = []
 
     # Training, Validation, Test Loop
     for epoch in range(args.epochs):
@@ -305,7 +313,7 @@ for k in range(args.kfold-1,-1,-1):
                 # Set Grad to be True only for phase=train
                 with torch.set_grad_enabled(phase == 'train'):
                     data = to_var(data)
-
+                    
                     if phase == 'train':
                         ret = model.run_on_batch(data, optimizer, criterion_reg, criterion_cls, args.task, epoch)
                     else:
@@ -481,6 +489,11 @@ for k in range(args.kfold-1,-1,-1):
                         best_cog1 = plot_mse_cog1
                         best_cog2 = plot_mse_cog2
                         best_cog3 = plot_mse_cog3
+                        best_imputation = ret['imputations'].data.cpu().numpy()
+
+                        # keep best model
+                        if len(kfold_auc) == 0 or best_auc > max(kfold_auc):
+                            kfold_model = model
 
             # Tensorflow Logging
             if phase=='train':
@@ -557,6 +570,7 @@ for k in range(args.kfold-1,-1,-1):
     writelog(f, 'Cog3 : ' + str(best_cog3))
     writelog(f, 'MAE : ' + str(mae))
     writelog(f, 'MRE : ' + str(mre))
+    writelog(f, 'Imputation: ' + str(best_imputation.shape))
 
 
     kfold_auc.append(best_auc)
@@ -578,7 +592,7 @@ for k in range(args.kfold-1,-1,-1):
     kfold_cog3.append(best_cog3)
     kfold_mae.append(best_mae)
     kfold_mre.append(best_mre)
-
+    kfold_imputation.append(best_imputation)
 
 writelog(f, '---------------')
 writelog(f, 'SUMMARY OF ALL KFOLD')
@@ -607,6 +621,7 @@ mean_cog3, std_cog3 = round(np.mean(kfold_cog3), k_fold), round(np.std(kfold_cog
 mean_mae, std_mae = round(np.mean(kfold_mae), k_fold), round(np.std(kfold_mae), k_fold)
 mean_mre, std_mre = round(np.mean(kfold_mre), k_fold), round(np.std(kfold_mre), k_fold)
 
+
 writelog(f, 'AUC : ' + str(mean_auc) + ' + ' + str(std_auc))
 writelog(f, 'AUC PRC : ' + str(mean_auprc) + ' + ' + str(std_auprc))
 writelog(f, 'Accuracy : ' + str(mean_acc) + ' + ' + str(std_acc))
@@ -628,4 +643,68 @@ writelog(f, 'MAE : ' + str(mean_mae) + ' + ' + str(std_mae))
 writelog(f, 'MRE : ' + str(mean_mre) + ' + ' + str(std_mre))
 writelog(f, '---------------')
 writelog(f, 'END OF CROSS VALIDATION TRAINING')
+
+
+# generate imputed values from kfold_model
+writelog(f, 'START OF IMPUTATION')
+all_imputed = []
+all_labels = []
+for key in dataloaders:
+    for i, data in enumerate(dataloaders[key]):
+        data = to_var(data)
+        
+        # get first year
+        original_data = data['forward']['values'].data.cpu().numpy()
+        original_masks = data['forward']['masks'].data.cpu().numpy()
+        first_year_mri = original_data[:,:1,:6]
+        first_year_mmse = original_data[:,:1,6:7]
+        first_year_adas11 = original_data[:,:1,7:8]
+        first_year_adas13 = original_data[:,:1,8:9]
+
+
+        # impute
+        ret = kfold_model.run_on_batch(data, None, criterion_reg, criterion_cls, args.task)
+
+        # get data and merged actual values with imputed missing values
+        N, t, f = ret['shifted_data'].data.cpu().numpy().shape
+        shifted_data = ret['shifted_data'].data.cpu().numpy()
+        shifted_mask = ret['shifted_mask'].data.cpu().numpy()
+        output_reg = ret['predictions_feature'].data.cpu().numpy().reshape(N, t, f)
+        output_mmse = ret['predict_mmse'].data.cpu().numpy().reshape(N, t, 1)
+        output_ad11 = ret['predict_ad11'].data.cpu().numpy().reshape(N, t, 1)
+        output_ad13 = ret['predict_ad13'].data.cpu().numpy().reshape(N, t, 1)
+
+        y_reg_extract = (shifted_data * shifted_mask) + (output_reg * (1 - shifted_mask))
+        y_mmse_extract = (original_data[:, 1:, 6:7] * original_masks[:, 1:, 6:7]) + (output_mmse * (1 - original_masks[:, 1:, 6:7]))
+        y_ad11_extract = (original_data[:, 1:, 7:8] * original_masks[:, 1:, 7:8]) + (output_ad11 * (1 - original_masks[:, 1:, 7:8]))
+        y_ad13_extract = (original_data[:, 1:, 8:9] * original_masks[:, 1:, 8:9]) + (output_ad13 * (1 - original_masks[:, 1:, 8:9]))
+
+        # concate first year
+        y_reg_extract = np.concatenate((first_year_mri, y_reg_extract), axis=1)
+        y_mmse_extract = np.concatenate((first_year_mmse, y_mmse_extract), axis=1)
+        y_ad11_extract = np.concatenate((first_year_adas11, y_ad11_extract), axis=1)
+        y_ad13_extract = np.concatenate((first_year_adas13, y_ad13_extract), axis=1)
+        
+        #  Get original labels
+        original_labels = data['labels'].data.cpu().numpy()
+        all_labels.append(original_labels)
+
+        # concate all features together
+        features_extract = np.concatenate((y_reg_extract, y_mmse_extract, y_ad11_extract, y_ad13_extract), axis=2)
+        all_imputed.append(np.concatenate((features_extract, original_masks), axis=2))
+
+# concate all imputed batches together
+all_imputed = np.concatenate(tuple(all_imputed), axis=0)
+all_labels = np.concatenate(tuple(all_labels), axis=0)
+all_data = {'data': all_imputed, 'labels': all_labels}
+
+
+# TODO export to pkl file
+FILENAME_IMPUTED = 'ADNI_DATA_IMPUTED_5.pkl'
+with open(FILENAME_IMPUTED, 'wb') as handle:
+    pickle.dump(all_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+writelog(f, 'END OF IMPUTATION')
+print('all_imputed', all_imputed.shape)
+print('all_labels', all_labels.shape)
 f.close()

@@ -207,7 +207,21 @@ class Cog_Model(nn.Module):
         print('===debug output_probs.shape', output_probs.contiguous().view(-1,3).shape)
         print('===debug labels.squeeze()', len(labels.squeeze().long()))
         print('===debug labels.shape', labels.shape) """
-        #raise NotImplementedError
+        """ y_reg_extract = (shifted_data * shifted_mask) + (output_reg * (1 - shifted_mask))
+        y_mmse_extract = (data[direct]['values'][:, 1:, 6:7] * data[direct]['masks'][:, 1:, 6:7]) + (output_mmse * (1 - data[direct]['masks'][:, 1:, 6:7]))
+        y_ad11_extract = (data[direct]['values'][:, 1:, 7:8] * data[direct]['masks'][:, 1:, 7:8]) + (output_ad11 * (1 - data[direct]['masks'][:, 1:, 7:8]))
+        y_ad13_extract = (data[direct]['values'][:, 1:, 8:9] * data[direct]['masks'][:, 1:, 8:9]) + (output_ad13 * (1 - data[direct]['masks'][:, 1:, 8:9]))
+        
+        print(y_ad13_extract[15])
+        print(output_ad13[15])
+        print(data[direct]['values'][:, 1:, 8:9][15])
+        print(data[direct]['masks'][:, 1:, 8:9][15]) 
+        
+        print('shape', output_reg.shape)
+        print('shape', output_mmse.shape)
+        print('shape', output_ad11.shape)
+        print('shape', output_ad13.shape)
+        raise NotImplementedError"""
 
         if multi_flag == True:
             y_cls_loss = criterion_cls(output_probs.contiguous().view(-1,3), labels.squeeze().long())
